@@ -2426,8 +2426,16 @@ SingleDrvOutputs LocalDerivationGoal::registerOutputs()
                 },
             }, *orifu);
         }},
-        {[&](const std::string & path, const std::string & parent) {
-            // TODO with more -vvvv also show the temporary paths for manual inspection.
+        {[&](const std::string & path, const std::string & parent,
+                const std::vector<std::string>::const_iterator cycle,
+                const std::vector<std::string>::const_iterator cycleEnd) {
+            if (verbosity >= lvlInfo) {
+                logger->log(lvlInfo, "output cycle detected (each path references the path below):");
+                for (auto s = cycle; s != cycleEnd; ++s) {
+                    logger->log(lvlInfo, worker.store.printStorePath(*get(scratchOutputs, *s)));
+                }
+                logger->log(lvlInfo, worker.store.printStorePath(*get(scratchOutputs, path)));
+            }
             return BuildError(
                 "cycle detected in build of '%s' in the references of output '%s' from output '%s'",
                 worker.store.printStorePath(drvPath), path, parent);

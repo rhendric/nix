@@ -995,7 +995,16 @@ void LocalStore::registerValidPaths(const ValidPathInfos & infos)
                 auto i = infos.find(path);
                 return i == infos.end() ? StorePathSet() : i->second.references;
             }},
-            {[&](const StorePath & path, const StorePath & parent) {
+            {[&](const StorePath & path, const StorePath & parent,
+                    const std::vector<StorePath>::const_iterator cycle,
+                    const std::vector<StorePath>::const_iterator cycleEnd) {
+                if (verbosity >= lvlInfo) {
+                    logger->log(lvlInfo, "cycle detected (each path references the path below):");
+                    for (auto s = cycle; s != cycleEnd; ++s) {
+                        logger->log(lvlInfo, printStorePath(*s));
+                    }
+                    logger->log(lvlInfo, printStorePath(path));
+                }
                 return BuildError(
                     "cycle detected in the references of '%s' from '%s'",
                     printStorePath(path),

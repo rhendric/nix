@@ -8,18 +8,24 @@ namespace nix {
 template<typename T>
 std::vector<T> topoSort(std::set<T> items,
         std::function<std::set<T>(const T &)> getChildren,
-        std::function<Error(const T &, const T &)> makeCycleError)
+        std::function<Error(const T &, const T &,
+            const typename std::vector<T>::const_iterator,
+            const typename std::vector<T>::const_iterator)> makeCycleError)
 {
-    std::vector<T> sorted;
-    std::set<T> visited, parents;
+    std::vector<T> sorted, parents;
+    std::set<T> visited;
+    std::map<T, int> parentsMap;
 
     std::function<void(const T & path, const T * parent)> dfsVisit;
 
     dfsVisit = [&](const T & path, const T * parent) {
-        if (parents.count(path)) throw makeCycleError(path, *parent);
+        auto search = parentsMap.find(path);
+        if (search != parentsMap.end())
+            throw makeCycleError(path, *parent, std::next(parents.cbegin(), search->second), parents.cend());
 
         if (!visited.insert(path).second) return;
-        parents.insert(path);
+        parentsMap[path] = parents.size();
+        parents.push_back(path);
 
         std::set<T> references = getChildren(path);
 
@@ -29,7 +35,8 @@ std::vector<T> topoSort(std::set<T> items,
                 dfsVisit(i, &path);
 
         sorted.push_back(path);
-        parents.erase(path);
+        parentsMap.erase(path);
+        parents.pop_back();
     };
 
     for (auto & i : items)

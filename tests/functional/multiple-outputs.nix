@@ -90,12 +90,14 @@ rec {
         "a"
         "b"
         "c"
+        "d"
       ];
       builder = builtins.toFile "builder.sh" ''
-        mkdir $a $b $c
-        echo $a > $b/foo
+        mkdir $a $b $c $d
+        echo $d > $b/foo
         echo $b > $c/bar
         echo $c > $a/baz
+        echo $c > $d/qux
       '';
     }).a;
 

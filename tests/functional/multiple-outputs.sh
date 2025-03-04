@@ -75,10 +75,18 @@ nix-build multiple-outputs.nix -A a.first --no-out-link
 
 # Cyclic outputs should be rejected.
 echo "building cyclic..."
-if nix-build multiple-outputs.nix -A cyclic --no-out-link; then
+if nix-build multiple-outputs.nix -A cyclic --no-out-link 2> $TEST_ROOT/cyclic-out; then
     echo "Cyclic outputs incorrectly accepted!"
     exit 1
 fi
+expected="\
+output cycle detected \(each path references the path below\):
+$TEST_ROOT/store/[a-z0-9]*-cyclic-outputs-c
+$TEST_ROOT/store/[a-z0-9]*-cyclic-outputs-b
+$TEST_ROOT/store/[a-z0-9]*-cyclic-outputs-d
+$TEST_ROOT/store/[a-z0-9]*-cyclic-outputs-c
+error:"
+[[ "$(< $TEST_ROOT/cyclic-out)" =~ $expected ]]
 
 # Do a GC. This should leave an empty store.
 echo "collecting garbage..."
